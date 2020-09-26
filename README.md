@@ -1,6 +1,3 @@
-# Network-communication
-Network communication
-
 # TCP and DNS sockets
 Commissioning and an exemplary execution are as follows:
 ```
