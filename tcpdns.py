@@ -216,3 +216,7 @@ def recv_all(s, n):
         d.append(d_latest)
 
     return ''.join(d)
+
+print dns_query("A", "kacper.bak.pl", "8.8.8.8")
+print dns_query("MX", "bak.pl", "8.8.8.8")
+print dns_query("TXT", "bak.pl", "dns1.domeny.tv")
