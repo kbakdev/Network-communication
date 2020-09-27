@@ -85,3 +85,66 @@ class SimpleChatWWW():
         sys.stdout.write("[  INFO ] <%s> %s\n" % (sender_ip, text))
 
         return { 'status': (200, 'OK') }
+
+    def __handle_POST_messages(self, req):
+        # Read the needed fields from the received JSON object.
+        # It is safe not to make any assumptions about the content and type of data being transferred.
+        try:
+            obj = json.loads(req['data'])
+        except ValueError:
+            return { 'status': (400, 'Bad Request') }
+
+        if type(obj) is not dict or 'last_message_id' not in obj:
+            return { 'status': (400, 'Bad Request') }
+
+        last_message_id = obj['last_message_id']
+
+        if type(last_message_id) is not int:
+            return { 'status': (400, 'Bad Request') }
+
+        # Copy all messages, starting with last_message_id.
+        with self.messages_lock:
+            last_message_id -= self.messages_offset
+            if last_message_id < 0:
+                last_message_id = 0
+            messages = self.messages[last_message_id:]
+            new_last_message_id = self.messages_offset + len(self.messages)
+
+        # Generate a response.
+        data = json.dumps({
+            "last_message_id": new_last_message_id,
+            "messages": messages
+        })
+
+        return {
+            'status': (200, 'OK'),
+            'headers': [
+                ('Content-Type', 'application/json;charset=utf-8'),
+            ],
+        'data': data
+        }
+
+    # Creating a response containing the contents of the file on the disk.
+    # In practice, the method below additionally tries to cache files and read
+    # them only if they have not already been loaded or if the file has changed
+    # in the meantime.
+    def __send_file(self, fname):
+        # Determine the file type based on its extension.
+        ext = os.path.splitext(fname)[1]
+        mime_type = {
+            '.html': 'text/html;charset=utf-8',
+            '.js': 'application/javascript;charset=utf-8',
+            '.css': 'text/css;charset=utf-8',
+            }.get(ext.lower(), 'application/octet-stream')
+
+        # Check when the file was last modified.
+        try:
+            mtime = os.stat(fname).st_mtime
+        except:
+            # Unfortunately, CPython on Windows throws an exception class that is not declared under GNU/Linux.
+            # The easiest way is to catch all exceptions, although this is definitely an inelegant solution.
+
+            # The file probably does not exist or cannot be accessed.
+            return { 'status': (404, 'Not Found') }
+
+        # Check if the file is in the cache.
