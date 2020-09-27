@@ -319,3 +319,52 @@ class ClientThread(Thread):
             txt = list(txt)
             if sys.version_info.major == 3:
                 txt = [bytes(ch, 'ascii') for ch in txt]
+            
+            full_data = []
+            last_n_bytes = [None] * len(txt)
+
+            # Until the last N bytes are equal to the searched value, read the data.
+
+            while last_n_bytes != txt:
+                next_byte = sock.recv(1)
+                if not next_byte:
+                    return '' # The connection has been broken.
+                full_data.append(next_byte)
+                last_n_bytes.pop(0)
+                last_n_bytes.append(next_byte)
+
+            full_data = b''.join(full_data)
+            if sys.version_info.major == 3:
+                return str(full_data, 'utf-8')
+            return full_data
+
+        # Auxiliary function that receives an exact number of bytes.
+        def recv_all(sock, n):
+            data = []
+
+            while len(data) < n:
+                data_latest = sock.recv(n - len(data))
+                if not data_latest:
+                    return None
+                data.append(data_latest)
+
+            data = b''.join(data)
+            if sys.version_info.major == 3:
+                return str(data, 'utf-8')
+            return data
+
+        # Auxiliary function that receives data from the socket until disconnected.
+        def recv_remaining(sock):
+            data = []
+            while True:
+                data_latest = sock.recv(4096)
+                if not data_latest:
+                    data = b''.join(data)
+                    if sys.version_info.major == 3:
+                        return str(data, 'utf-8')
+                    return data
+                data.append(data_latest)
+
+        def main():
+            the_end = Event()
+            website = SimpleChatWWW(the_end)
