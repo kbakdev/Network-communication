@@ -148,3 +148,174 @@ class SimpleChatWWW():
             return { 'status': (404, 'Not Found') }
 
         # Check if the file is in the cache.
+        with self.file_cache_lock:
+            if fname in self.file_cache and self.file_cache[fname][0] == mtime:
+                return {
+                    'status': (200, 'OK'),
+                    'headers': [
+                        ('Content-Type', mime_type),
+                    ],
+                'data': self.file_cache[fname][1]
+                }
+
+        # As a last resort, load the file.
+        try:
+            with open(fname, 'rb') as f:
+                data = f.read()
+                mtime = os.fstat(f.fileno()).st_mtime # Update the mime.
+        except IOError as e:
+            # Failed to read the file.
+            if DEBUG:
+                sys.stdout.write("[WARNING] File %s not found, but requested.\n" % fname)
+            
+            return { 'status': (404, 'Not Found') }
+
+        # Add the contents of the file to the cache (unless another thread has done so in the meantime).
+        with self.file_cache_lock:
+            if fname not in self.file_cache or self.file_cache[fname][0] < mtime:
+                self.file_cache[fname] = (mtime, data)
+
+        # Send a reply with the contents of the file.
+        return {
+            'status': (200, 'OK'),
+                'headers': [
+                    ('Content-Type', mime_type),
+                ],
+            'data': data
+            }
+
+# A very simple implementation of a multi-threaded HTTP server.
+class ClientThread(Thread):
+    def __init__(self, website, sock, sock_addr):
+        super(ClientThread, self).__init__()
+        self.s = sock
+        self.s_addr = sock_addr
+        self.website = website
+
+    def __recv_http_request(self):
+        # Very simplified processing of an HTTP request with the main purpose of mining:
+        # - methods
+        # - desired path
+        # - next parameters in the form of a dictionary
+        # - additional data (in the case of POST)
+
+        # Receive data until completion of header.
+        data = recv_until(self.s, '\r\n\r\n')
+        if not data:
+            return None
+
+        # Split the query into lines.
+        lines = data.split('\r\n')
+
+        # Analyze the query (first line).
+        query_tokens = lines.pop(0).split(' ')
+        if len(query_tokens) != 3:
+            return None
+        
+        method, query, version = query_tokens
+
+        # Load parameters.
+        headers = {}
+        for line in lines:
+            tokens = line.split(':', 1)
+            if len(tokens) != 2:
+                continue
+
+            # The capitalization of the header does not matter,
+            # so it is a good idea to normalize it,
+            # e.g. by converting all letters to lowercase.
+            header_name = tokens[0].strip().lower()
+            header_value = tokens[1].strip()
+            headers[header_name] = header_value
+
+            # For POST method, download additional data.
+            # Note: the exemplary implementation in no way limits the number of transmitted data.
+            if method == 'POST':
+                try:
+                    data_length = int(headers['content-length'])
+                    data = recv_all(self.s, data_length)
+                except KeyError as e:
+                    # There is no Content-Length entry in the headers.
+                    data = recv_remaining(self.s)
+                except ValueError as e:
+                    return None
+            else:
+                data = None
+
+            # Put all relevant data in the dictionary and return it.
+            request = {
+                "method": method,
+                "query": query,
+                "headers": headers,
+                "data": data,
+                "client_ip": self.s_addr[0],
+                "client_port": self.s_addr[1]
+                }
+
+            return request
+
+        def __send_http_response(self, response):
+            # Construct the HTTP response.
+            lines = []
+            lines.append('HTTP/1.1 %u %s' % response['status'])
+
+            # Set the basic fields.
+            lines.append('Server: example')
+            if 'data' in response:
+                lines.append('Content-Length: %u' % len(response['data']))
+            else:
+                lines.append('Content-Length: 0')
+            
+            # Rewrite the headlines.
+            if 'headers' in response:
+                for header in response['headers']:
+                    lines.append('%s: %s' % header)
+            
+            lines.append('')
+
+            # Rewrite the data.
+            if 'data' in response:
+                lines.append(response['data'])
+            
+            # Convert the response to bytes and send.
+            if sys.version_info.major == 3:
+                converted_lines = []
+                for line in lines:
+                    if type(line) is bytes:
+                        converted_lines.append(line)
+                    else:
+                        converted_lines.append(bytes(line, 'utf-8'))
+                    lines = converted_lines
+
+                self.s.sendall(b'\r\n'.join(lines))
+            
+            def __handle_client(self):
+                request = self.__recv_http_request()
+                if not request:
+                    if DEBUG:
+                        sys.stdout.write("[WARNING] Client %s:%i doesn't make any sense. "
+                                         "Disconnecting.\n" % self.s_addr)
+                    return
+                if DEBUG:
+                    sys.stdout.write("[  INFO ] Client %s:%i requested %s\n" % (
+                        self.s_addr[0], self.s_addr[1], request['query']))
+                response = self.website.handle_http_request(request)
+                self.__send_http_response(response)
+
+            def run(self):
+                self.s.settimeout(5) # Operations should not take longer than 5 seconds.
+
+                try:
+                    self.__handle_client()
+                except socket.tiemout as e:
+                    if DEBUG:
+                        sys.stdout.write("[WARNING] Client %s:%i timed out. "
+                                         "Disconnecting.\n" % self.s_addr)
+                self.s.shutdown(socket.SHUT_RDWR)
+                self.s.close()
+
+        # Not a very quick but convenient function that receives data until a specific string (which is also returned) is encountered.
+        def recv_until(sock, txt):
+            txt = list(txt)
+            if sys.version_info.major == 3:
+                txt = [bytes(ch, 'ascii') for ch in txt]
