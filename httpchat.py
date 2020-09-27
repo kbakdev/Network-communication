@@ -56,4 +56,32 @@ class SimpleChatWWW():
         return self.__send_file('httpchat_main.js')
 
     def __handle_POST_chat(self, req):
-        # 
+        # Read the needed fields from the received JSON object.
+        # It is safe not to make any assumptions about the content and
+        # type of data being transferred.
+        try:
+            obj = json.loads(req['data'])
+        except ValueError:
+            return { 'status': (400, 'Bad Request') }
+
+        if type(obj) is not dict or 'text' not in obj:
+            return { 'status': (400, 'Bad Request') }
+        
+        text = obj['text']
+        if type(text) is not str and type(text) is not unicode:
+            return { 'status': (400, 'Bad Request') }
+        
+        sender_ip = req['client_ip']
+
+        # Add a message to the list.
+        # If the list is longer than the limit,
+        # remove one message in front and increase the offset.
+        with self.messages_lock:
+            if len(self.messages) > self.messages_limit:
+                self.messages.pop(0)
+                self.messages_offset += 1
+            self.messages.append((sender_ip, text))
+
+        sys.stdout.write("[  INFO ] <%s> %s\n" % (sender_ip, text))
+
+        return { 'status': (200, 'OK') }
