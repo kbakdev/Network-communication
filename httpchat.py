@@ -368,3 +368,5 @@ class ClientThread(Thread):
         def main():
             the_end = Event()
             website = SimpleChatWWW(the_end)
+
+        # Create a nest.
