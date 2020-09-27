@@ -34,4 +34,26 @@ class SimpleChatWWW():
         self.handlers = {
             ('GET', '/'):          self.__handle_GET_index,
             ('GET', 'index.html'): self.__handle_GET_index,
+            ('GET', '/style.css'): self.__handle_GET_style,
+            ('GET', '/main.js'):   self.__handle_GET_javascript,
+            ('POST', '/chat'):     self.__handle_POST_chat,
+            ('POST', '/messages'): self.__handle_POST_messages,
         }
+
+    def handle_http_request(self, req):
+        req_query = (req['method'], req['query'])
+        if req_query not in self.handlers:
+            return { 'status': (404, 'Not Found') }
+        return self.handlers[req_query](req)
+
+    def __handle_GET_index(self, req):
+        return self.__send_file('httpchat_index.html')
+
+    def __handle_GET_style(self, req):
+        return self.__send_file('httpchat_style.css')
+
+    def __handle_GET_javascript(self, req):
+        return self.__send_file('httpchat_main.js')
+
+    def __handle_POST_chat(self, req):
+        # 
