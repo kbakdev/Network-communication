@@ -183,7 +183,7 @@ class SimpleChatWWW():
                 ],
             'data': data
             }
-
+            
 # A very simple implementation of a multi-threaded HTTP server.
 class ClientThread(Thread):
     def __init__(self, website, sock, sock_addr):
@@ -365,47 +365,47 @@ class ClientThread(Thread):
                     return data
                 data.append(data_latest)
 
-        def main():
-            the_end = Event()
-            website = SimpleChatWWW(the_end)
+def main():
+    the_end = Event()
+    website = SimpleChatWWW(the_end)
 
-        # Create a socket.
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Create a socket.
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # In the case of GNU/Linux it should be pointed out that the same local
-        # address should be usable immediately after closing the socket.
-        # Otherwise, the address will be in a "quarantine" state (TIME_WAIT)
-        # for 60 seconds, and during this time attempting to bind the socket
-        # again will fail.
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # In the case of GNU/Linux it should be pointed out that the same local
+    # address should be usable immediately after closing the socket.
+    # Otherwise, the address will be in a "quarantine" state (TIME_WAIT)
+    # for 60 seconds, and during this time attempting to bind the socket
+    # again will fail.
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Listen on port 8888 on all interfaces.
-        s.bind(('0.0.0.0', 8888))
-        s.listen(32) # The number in the parameter indicates the maximum length
-                     # of the queue of waiting connections. In this case, calls
-                     # will be answered on a regular basis, so the queue may be small.
-                     # Typical values are 128 (GNU / Linux) or "several hundred" (Windows).
+    # Listen on port 8888 on all interfaces.
+    s.bind(('0.0.0.0', 8888))
+    s.listen(32) # The number in the parameter indicates the maximum length
+                 # of the queue of waiting connections. In this case, calls
+                 # will be answered on a regular basis, so the queue may be small.
+                 # Typical values are 128 (GNU / Linux) or "several hundred" (Windows).
 
-        # Set a timeout on the socket so that blocking operations on it will be interrupted
-        # every second. This allows the code to verify that the server has been called to exit.
-        s.settimeout(1)
+    # Set a timeout on the socket so that blocking operations on it will be interrupted
+    # every second. This allows the code to verify that the server has been called to exit.
+    s.settimeout(1)
 
-        while not the_end.is_set():
-            # Pick up the call.
-            try:
-                c, c_addr = s.accept()
-                c.setblocking(1) # In some Python implementations, the socket returned by the
+    while not the_end.is_set():
+        # Pick up the call.
+        try:
+            c, c_addr = s.accept()
+            c.setblocking(1) # In some Python implementations, the socket returned by the
                                  # accept method on a listening socket with a timeout setting
                                  # is asynchronous by default, which is undesirable behavior.
-                if DEBUG:
-                    sys.stdout.write("[  INFO ] New connection: %s:%i\n" % c_addr)
-            except socket.timeout as e:
-                continue # Go back to the beginning of the loop and check the end condition.
+            if DEBUG:
+                sys.stdout.write("[  INFO ] New connection: %s:%i\n" % c_addr)
+        except socket.timeout as e:
+            continue # Go back to the beginning of the loop and check the end condition.
 
-            # New connection.
-            # Create a new thread to handle it (alternatively, you could use threadpool here).
-            ct = ClientThread(website, c, c_addr)
-            ct.start()
+        # New connection.
+        # Create a new thread to handle it (alternatively, you could use threadpool here).
+        ct = ClientThread(website, c, c_addr)
+        ct.start()
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
