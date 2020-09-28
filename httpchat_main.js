@@ -26,3 +26,31 @@ $(function() {
 });
 
 // Regularly poll the server for new messages.
+var last_message_id = -1;
+var chat = $("chat-text");
+function checkForNewMessages() {
+    var request_json = JSON.stringify({
+        "last_message_id": last_message_id
+    });
+
+    $.ajax({
+        url: '/messages',
+        type: 'POST',
+        data: request_json,
+        dataType: 'json',
+        async: true,
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("Failed to fetch new messages: " + errorThrown);
+
+            // Call the function again in a second.
+            window.setTimeout(checkForNewMessages, 1000);
+        },
+    success: function(data) {
+        last_message_id = data["last_message_id"];
+        data["messages"].forEach(function(cv, idx, arr) {
+            var person = cv[0];
+            var text = cv[1];
+            var chat_line = $('<p/>');
+        }
+    }
+}
