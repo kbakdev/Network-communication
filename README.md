@@ -1,7 +1,7 @@
 # TCP and DNS sockets
 Commissioning and an exemplary execution are as follows:
 ```
-$ python tcpdns.py
+$ python3 tcpdns.py
 ```
 
 In order to check the correctness of the resulting data, it is worth comparing it with the result of the standard tools used to interact with DNS:
@@ -17,7 +17,7 @@ You can test the server presented, for example using the irreplaceable console c
 
 <b>Terminal 1 (server):</b>
 ```
-$ python httpchat.py
+$ python3 httpchat.py
 ```
 
 <b>Terminal 2 (curl):</b>
