@@ -69,7 +69,8 @@ class SimpleChatWWW():
         
         text = obj['text']
         if type(text) is not str and type(text) is not unicode:
-            return { 'status': (400, 'Bad Request') }
+            return { 'status': (400, 'Bad Requesain__":
+    main()t') }
         
         sender_ip = req['client_ip']
 
