@@ -22,7 +22,9 @@ $ python httpchat.py
 
 <b>Terminal 2 (curl):</b>
 ```
-curl -v -d '{"text":"Hello World!"}` http://xxx.xxx.xx.xxx:8888/chat
+curl -v -d '{"text":"Hello World!"}' http://xxx.xxx.xx.xxx:8888/chat
 ```
+
+Check your IP address with the `ifconfig` (Linux OS) or `ipconfig` (Windows OS) command.
 
 Moving to the client-side part of the application, we will use a very simple architecture, which assumes the use of one static (in the sense of the server) page, on which changes (new messages) will be applied using a script in the background in JavaScript, using the popular jQuery libraries. The application will consist of three files.
