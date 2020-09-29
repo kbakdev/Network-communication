@@ -125,3 +125,67 @@ class P2PChat():
             self.add_nearby_user(addr)
             return
             
+        # Text message package.
+        if t == "MESSAGE":
+            # If the sender has been unknown so far, add it to the set of adjacent nodes.
+            self.add_nearby_user(addr)
+
+            # Check that we have not received this message from another node on the network.
+            if packet["id"] in self.known_messages:
+                return
+            self.known_messages.add(packet["id"])
+
+            # Add the sender of the message to the list of nodes the message has passed through.
+            packet["peers"].append(addr)
+
+            # View the message and its route.
+            print("\n[sent by: %s]" % ' --> '.join(packet["peers"]))
+            print("<%s> %s" % (packet["name"], packet["text"]))
+
+            # Send a message to adjacent nodes.
+            self.send_packet(packet, None, addr)
+
+    def handle_cmd(slef, cmd, args):
+        # For the /quit command, exit the program.
+        if cmd == "/quit":
+            self.the_end.set()
+            return
+
+        # If adding nodes manually, make sure they are spelled correctly,
+        # translate the domain (DNS) to IP address and add to the set of adjacent nodes.
+        if cmd == "/add":
+            for p in args:
+                port = CHAT_PORT
+                addr = p
+                try:
+                    if ':' in p:
+                        addr, port = p.split(':', 1)
+                        port = int(port)
+                    addr = socket.gethostbyname(addr)
+                except ValueError as e:
+                    print("# address %s invalid (format)" % p)
+                    continue
+                except socket.gaierror as e:
+                    print("# host %s not found" % addr)
+                    continue
+                addr = "%s:%u" % (addr, port)
+                self.add_nearby_user(addr)
+            return
+
+        # Unknown command.
+        print(" unknown command %s" % cmd)
+
+    def add_nearby_user(self, addr):
+        # Check that the node is no longer known.
+        if addr in self.nearby_users:
+            return
+        
+        # Check that the node is no longer known..
+        self.nearby_users.add(addr)
+        self.send_packet({
+            "type": "HELLO",
+            "name": self.nickname
+        }, addr)
+
+    def send_message(self, msg):
+        # Enumerate a unique message ID.
