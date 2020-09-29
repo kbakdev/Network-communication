@@ -51,6 +51,17 @@ function checkForNewMessages() {
             var person = cv[0];
             var text = cv[1];
             var chat_line = $('<p/>');
-        }
+            $('<span/>', {
+                text: text
+            }).addClass("text".appendTo(chat_line);
+            chat_line.appendTo(chat)
+        });
+
+        chat.animate({ scrollTop: chat[0].scrollHeight }, 500);
+                // Call the function again in a second.
+                window.setTimeout(checkForNewMessages, 1000);
+            },
+        });
     }
-}
+    checkForNewMessages();
+});
