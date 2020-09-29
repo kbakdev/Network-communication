@@ -53,7 +53,7 @@ function checkForNewMessages() {
             var chat_line = $('<p/>');
             $('<span/>', {
                 text: text
-            }).addClass("text".appendTo(chat_line);
+            }).addClass("text").appendTo(chat_line);
             chat_line.appendTo(chat)
         });
 
