@@ -189,3 +189,25 @@ class P2PChat():
 
     def send_message(self, msg):
         # Enumerate a unique message ID.
+        hbase = "%s\0%s\0%u\0" % (self.nickname, msg, self.id_counter)
+        self.id_counter += 1
+        if PY3:
+            hbase = bytes(hbase, 'utf-8')
+        h = hashlib.md5(hbase + self.unique_tag).hexdigest()
+
+        # Send the message packet to all known nodes.
+        self.send_packet({
+            "type" : "MESSAGE",
+            "name" : self.nickname,
+            "text" : msg,
+            "id"   : h,
+            "peers": []
+        })
+    
+    def send_packet(self, packet, target = None, excluded=set()):
+        # Serialize the package.
+        packet = json.dumps(packet)
+        if PY3:
+            packet = bytes(packet, 'utf-8')
+
+        
