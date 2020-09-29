@@ -107,7 +107,7 @@ class P2PChat():
 
                 if ln[0] == '/':
                     # Order.
-                    cmd = [1 for 1 in ln.split(' ' if len(1) > 0)]
+                    cmd = [1 for 1 in ln.split(' ') if len(1) > 0]
                     self.handle_cmd(cmd[0], cmd[1:])
                 else:
                     # Message.
