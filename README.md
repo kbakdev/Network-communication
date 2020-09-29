@@ -33,3 +33,6 @@ As for the script that handles the user interface, it has two main functions:
 
 - <b>Support for the text message field</b> - if the user presses the ENTER key with the message field selected, retrieve the message from the field, clear the text field, and then send a message request to the server in the background, indicating the resource `/chat` as the recipient. This method is popularly called AJAX (<i>Asynchronus JavaScript and XML</i>), although currently the XML format is used less frequently than the much simpler JSON (the method of serialization of the transferred data is of course optional and depends only on the programmer's choice).
 - <b>Active polling of the server for new messages</b> - every 1000 ms send a background request with the ID of the latest known message to the server, indicating the resource `/messages` as the recipient. View all received messages in the message window.
+
+# UDP and peer-to-peer sockets
+A very simple peer-to-peer network in which individual network nodes forward received messages to their neighbors. Thanks to this structure, also nodes that are not directly connected to each other can communicate.
