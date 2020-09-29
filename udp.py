@@ -210,4 +210,26 @@ class P2PChat():
         if PY3:
             packet = bytes(packet, 'utf-8')
 
-        
+        # If no target node is specified, send the message to all nodes except those in the excluded set.
+        if not target:
+            target = list(self.nearby_users)
+        else:
+            target = [target]
+
+        for t in target:
+            if t in excluded:
+                continue
+
+            # I assume all addresses are correctly formatted at this point.
+            addr, port = t.split(":")
+            port = int(port)
+
+            # The actual shipment of the package.
+            self.s.sendto(packet, (addr, port))
+    
+    def main():
+        p2p = P2PChat()
+        p2p.main()
+
+    if __name__ == "__main__":
+        main()
